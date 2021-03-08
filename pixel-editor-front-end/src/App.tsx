@@ -1,11 +1,13 @@
 import React from 'react';
 import GlobalStyle from "./styles/globalStyles";
 
-function App() {
+import Editor from "./components/Editor/Editor";
+
+const App = () => {
   return (
     <div className="App">
       <GlobalStyle />
-      test
+      <Editor />
     </div>
   );
 }
