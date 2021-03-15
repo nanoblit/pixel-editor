@@ -1,4 +1,4 @@
-import { createGlobalStyle } from "styled-components";
+import { createGlobalStyle } from "styled-components/macro";
 
 import reset from "./reset";
 import { setSizing } from "./setSizing";
