@@ -119,9 +119,6 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   useEffect(() => {
-    if (!canvas) {
-      return;
-    }
     window.addEventListener("load", handleLoadAndResize);
     window.addEventListener("resize", handleLoadAndResize);
     window.addEventListener("mouseup", handleCanvasMouseUp);
@@ -132,7 +129,7 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
       window.removeEventListener("mouseup", handleCanvasMouseUp);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvas, pixels]);
+  }, []);
 
   return (
     <CanvasWrapper>
