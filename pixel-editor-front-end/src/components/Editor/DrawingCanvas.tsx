@@ -38,17 +38,12 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   const drawPixel = (color: number, x: number, y: number) => {
-    if (!canvas) {
+    if (!canvas || !ctx) {
       return;
     }
 
-    const ctx = canvas.getContext("2d");
     const ppd = canvas.width / resolution;
-
-    if (!ctx) {
-      return;
-    }
-
+    
     ctx.fillStyle = colorMap[color];
     const canvasX = Math.floor(x * ppd);
     const canvasY = Math.floor(y * ppd);
