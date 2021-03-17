@@ -15,18 +15,7 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
     2: "#4d513c",
     3: "#1c1c1c",
   }).current;
-  const [canvas, setCanvas] = useState<HTMLCanvasElement>();
-  const [ctx, setCtx] = useState<CanvasRenderingContext2D>();
-  const canvasRef = useCallback((node: HTMLCanvasElement) => {
-    if (!node) {
-      return;
-    }
-    setCanvas(() => node);
-    const context = node.getContext("2d");
-    if (context) {
-      setCtx(() => context);
-    }
-  }, []);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const drawPixels = () => {
     for (let i = 0; i < pixels.length; i++) {
@@ -38,12 +27,14 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   const drawPixel = (color: number, x: number, y: number) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) {
-      return;
+      return
     }
 
     const ppd = canvas.width / resolution;
-    
+
     ctx.fillStyle = colorMap[color];
     const canvasX = Math.floor(x * ppd);
     const canvasY = Math.floor(y * ppd);
@@ -52,13 +43,14 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   const setCanvasPixelSize = () => {
+    const canvas = canvasRef.current;
     if (!canvas) {
-      return;
+      return
     }
 
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    const canvasRect = canvas.getBoundingClientRect();
+    canvas.width = canvasRect.width;
+    canvas.height = canvasRect.height;
   };
 
   const handleLoadAndResize = () => {
@@ -67,15 +59,16 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   const setAndDrawPixel = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
     if (!canvas) {
-      return;
+      return
     }
 
     const ppd = canvas.width / resolution;
-    const rect = canvas.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
 
-    const x = Math.floor((clientX - rect.left) / ppd);
-    const y = Math.floor((clientY - rect.top) / ppd);
+    const x = Math.floor((clientX - canvasRect.left) / ppd);
+    const y = Math.floor((clientY - canvasRect.top) / ppd);
 
     // set this pixel to currently selected color
     pixels[y * resolution + x] = colorIdx;
@@ -114,12 +107,12 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   useEffect(() => {
-    window.addEventListener("load", handleLoadAndResize);
+    handleLoadAndResize()
     window.addEventListener("resize", handleLoadAndResize);
     window.addEventListener("mouseup", handleCanvasMouseUp);
 
     return () => {
-      window.removeEventListener("load", handleLoadAndResize);
+
       window.removeEventListener("resize", handleLoadAndResize);
       window.removeEventListener("mouseup", handleCanvasMouseUp);
     };
