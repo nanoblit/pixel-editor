@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CanvasElement, CanvasWrapper } from "./DrawingCanvasStyles";
 
 interface Props {
@@ -93,13 +93,6 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
     setAndDrawPixel(e.clientX, e.clientY);
   };
 
-  useEffect(() => {
-    for (let i = 0; i < resolution * resolution; i++) {
-      pixels.push(3);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleCanvasMouseUp = (e: MouseEvent) => {
     if (e.button === 0) {
       setIsDrawing(() => false);
@@ -107,12 +100,16 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   };
 
   useEffect(() => {
+    for (let i = 0; i < resolution * resolution; i++) {
+      pixels.push(3);
+    }
+
     handleLoadAndResize()
+
     window.addEventListener("resize", handleLoadAndResize);
     window.addEventListener("mouseup", handleCanvasMouseUp);
 
     return () => {
-
       window.removeEventListener("resize", handleLoadAndResize);
       window.removeEventListener("mouseup", handleCanvasMouseUp);
     };

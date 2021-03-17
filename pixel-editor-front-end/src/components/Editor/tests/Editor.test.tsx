@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import Editor from "../Editor";
+import Editor from "../Editor/Editor";
 
 describe("Editor", () => {
   test("drawing works", () => {

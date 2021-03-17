@@ -1,7 +1,7 @@
 import React from 'react';
 import GlobalStyle from "./styles/globalStyles";
 
-import Editor from "./components/Editor/Editor";
+import Editor from "./components/Editor/Editor/Editor";
 
 const App = () => {
   return (
