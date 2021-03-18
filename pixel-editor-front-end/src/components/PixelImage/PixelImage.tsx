@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from "react";
+import { PixelImageWrapper } from "./PixelImageStyles";
 
 interface Props {
   pixels: number[];
   resolution: number;
   colorMap: { [key: number]: string };
+  size: string;
 }
 
-const PixelImage: React.FC<Props> = ({ pixels, resolution, colorMap }) => {
+const PixelImage: React.FC<Props> = ({
+  pixels,
+  resolution,
+  colorMap,
+  size,
+}) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [canvas, setCanvas] = useState(document.createElement("canvas"));
+  const [src, setSrc] = useState("");
 
   useEffect(() => {
     canvas.width = resolution;
@@ -27,9 +35,17 @@ const PixelImage: React.FC<Props> = ({ pixels, resolution, colorMap }) => {
 
       ctx.fillRect(x, y, 1, 1);
     }
+
+    setSrc(() => canvas.toDataURL());
   }, [canvas, colorMap, pixels, resolution]);
 
-  return <></>;
+  return (
+    <PixelImageWrapper
+      style={{ "--size": size } as React.CSSProperties}
+      alt="art"
+      src={src}
+    />
+  );
 };
 
 export default PixelImage;

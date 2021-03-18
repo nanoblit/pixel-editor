@@ -4,17 +4,18 @@ import { CanvasElement, CanvasWrapper } from "./DrawingCanvasStyles";
 interface Props {
   resolution: number;
   colorIdx: number;
+  colorMap: { [key: number]: string };
+  onPixelsChanged: (pixels: number[]) => void;
 }
 
-const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
+const DrawingCanvas: React.FC<Props> = ({ 
+  resolution,
+  colorIdx,
+  colorMap,
+  onPixelsChanged,
+}) => {
   const pixels = useRef<number[]>([]).current;
   let [isDrawing, setIsDrawing] = useState(false);
-  const colorMap = useRef<{ [key: number]: string }>({
-    0: "#c7cfa2",
-    1: "#8a966d",
-    2: "#4d513c",
-    3: "#1c1c1c",
-  }).current;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const drawPixels = () => {
@@ -30,7 +31,7 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) {
-      return
+      return;
     }
 
     const ppd = canvas.width / resolution;
@@ -45,7 +46,7 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   const setCanvasPixelSize = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      return
+      return;
     }
 
     const canvasRect = canvas.getBoundingClientRect();
@@ -61,7 +62,7 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
   const setAndDrawPixel = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      return
+      return;
     }
 
     const ppd = canvas.width / resolution;
@@ -90,12 +91,26 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
     if (!isDrawing) {
       return;
     }
-    setAndDrawPixel(e.clientX, e.clientY);
+
+    // Draw on every pixel from last to current position (to avoid gaps)
+    const lastClientX = e.clientX - e.movementX;
+    const lastClientY = e.clientY - e.movementY;
+    const length = Math.floor(Math.sqrt(e.movementX * e.movementX + e.movementY * e.movementY));
+    const stepX = e.movementX / length;
+    const stepY = e.movementY / length;
+    for(let i = 0; i < length; i++) {
+      const currentClientX = lastClientX + stepX * i;
+      const currentClientY = lastClientY + stepY * i;
+
+      setAndDrawPixel(currentClientX, currentClientY);
+    }
+    
   };
 
   const handleCanvasMouseUp = (e: MouseEvent) => {
     if (e.button === 0) {
       setIsDrawing(() => false);
+      onPixelsChanged(pixels);
     }
   };
 
@@ -104,7 +119,7 @@ const DrawingCanvas: React.FC<Props> = ({ resolution, colorIdx }) => {
       pixels.push(3);
     }
 
-    handleLoadAndResize()
+    handleLoadAndResize();
 
     window.addEventListener("resize", handleLoadAndResize);
     window.addEventListener("mouseup", handleCanvasMouseUp);
