@@ -1,34 +1,35 @@
 import React, { useState } from "react";
+import { colorMap } from "../../../data/colorMaps";
 import PixelImage from "../../PixelImage/PixelImage";
 import ColorButton from "../ColorButton/ColorButton";
 import DrawingCanvas from "../DrawingCanvas/DrawingCanvas";
+import ImageEditor from "../ImageEditor/ImageEditor";
 
 const Editor = () => {
   const [drawingColorIdx, setDrawingColorIdx] = useState(0);
   const [pixels, setPixels] = useState<number[]>([]);
-  const [colorMap, setColorMap] = useState<{ [key: number]: string }>({
-    0: "#c7cfa2",
-    1: "#8a966d",
-    2: "#4d513c",
-    3: "#1c1c1c",
-  });
 
   const handlePixelsChange = (newPixels: number[]) => {
     setPixels(() => newPixels);
-    console.log(newPixels);
-    console.log(pixels);
   };
 
   const handleSave = () => {};
 
-  console.log(pixels);
   return (
     <>
-      <DrawingCanvas
+      {/* <DrawingCanvas
         resolution={32}
         colorIdx={drawingColorIdx}
         colorMap={colorMap}
         onPixelsChanged={handlePixelsChange}
+        drawable={true}
+      /> */}
+      <ImageEditor
+        resolution={32}
+        colorIdx={drawingColorIdx}
+        colorMap={colorMap}
+        onPixelsChanged={handlePixelsChange}
+        drawingCanvasPosition={[1, 0]}
       />
       {[0, 1, 2, 3].map((idx) => (
         <ColorButton

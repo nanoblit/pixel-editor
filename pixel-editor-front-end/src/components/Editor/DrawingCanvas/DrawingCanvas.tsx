@@ -5,14 +5,16 @@ interface Props {
   resolution: number;
   colorIdx: number;
   colorMap: { [key: number]: string };
-  onPixelsChanged: (pixels: number[]) => void;
+  onPixelsChanged?: (pixels: number[]) => void;
+  drawable: boolean;
 }
 
-const DrawingCanvas: React.FC<Props> = ({ 
+const DrawingCanvas: React.FC<Props> = ({
   resolution,
   colorIdx,
   colorMap,
   onPixelsChanged,
+  drawable,
 }) => {
   const pixels = useRef<number[]>([]).current;
   let [isDrawing, setIsDrawing] = useState(false);
@@ -79,7 +81,7 @@ const DrawingCanvas: React.FC<Props> = ({
   const handleCanvasMouseDown = (
     e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
   ) => {
-    if (e.button === 0) {
+    if (e.button === 0 && drawable) {
       setAndDrawPixel(e.clientX, e.clientY);
       setIsDrawing(() => true);
     }
@@ -95,22 +97,25 @@ const DrawingCanvas: React.FC<Props> = ({
     // Draw on every pixel from last to current position (to avoid gaps)
     const lastClientX = e.clientX - e.movementX;
     const lastClientY = e.clientY - e.movementY;
-    const length = Math.floor(Math.sqrt(e.movementX * e.movementX + e.movementY * e.movementY));
+    const length = Math.floor(
+      Math.sqrt(e.movementX * e.movementX + e.movementY * e.movementY)
+    );
     const stepX = e.movementX / length;
     const stepY = e.movementY / length;
-    for(let i = 0; i < length; i++) {
+    for (let i = 0; i < length; i++) {
       const currentClientX = lastClientX + stepX * i;
       const currentClientY = lastClientY + stepY * i;
 
       setAndDrawPixel(currentClientX, currentClientY);
     }
-    
   };
 
   const handleCanvasMouseUp = (e: MouseEvent) => {
     if (e.button === 0) {
       setIsDrawing(() => false);
-      onPixelsChanged(pixels);
+      if (drawable && onPixelsChanged) {
+        onPixelsChanged([...pixels]);
+      }
     }
   };
 

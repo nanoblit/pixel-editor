@@ -22,14 +22,14 @@ const PixelImage: React.FC<Props> = ({
     canvas.width = resolution;
     canvas.height = resolution;
 
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
+
     for (let i = 0; i < pixels.length; i++) {
       const x = i % resolution;
       const y = Math.floor(i / resolution);
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        return;
-      }
 
       ctx.fillStyle = colorMap[pixels[i]];
 
