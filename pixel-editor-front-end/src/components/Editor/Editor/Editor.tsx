@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { colorMap } from "../../../data/colorMaps";
 import PixelImage from "../../PixelImage/PixelImage";
 import ColorButton from "../ColorButton/ColorButton";
-import DrawingCanvas from "../DrawingCanvas/DrawingCanvas";
 import ImageEditor from "../ImageEditor/ImageEditor";
 
 const Editor = () => {
@@ -17,13 +16,6 @@ const Editor = () => {
 
   return (
     <>
-      {/* <DrawingCanvas
-        resolution={32}
-        colorIdx={drawingColorIdx}
-        colorMap={colorMap}
-        onPixelsChanged={handlePixelsChange}
-        drawable={true}
-      /> */}
       <ImageEditor
         resolution={32}
         colorIdx={drawingColorIdx}
