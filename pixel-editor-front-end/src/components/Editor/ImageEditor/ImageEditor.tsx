@@ -1,8 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import {
-  CanvasElement,
-  CanvasWrapper,
-} from "./ImageEditorStyles";
+import { CanvasElement, CanvasWrapper } from "./ImageEditorStyles";
 
 interface Props {
   pixels?: { [key: string]: number[] };
@@ -13,6 +10,9 @@ interface Props {
   drawingCanvasPosition: [number, number];
 }
 
+// Set ppd based on zoom level
+// Change DrawPixel so it offsets based on pixelImage and current width based on ppd position and view offset
+
 const ImageEditor: React.FC<Props> = ({
   resolution,
   colorIdx,
@@ -20,8 +20,11 @@ const ImageEditor: React.FC<Props> = ({
   onPixelsChanged,
   drawingCanvasPosition,
 }) => {
+  // Browser event listeners require useRef, because they don't support state
   const pixels = useRef<number[]>([]).current;
   let [isDrawing, setIsDrawing] = useState(false);
+  let zoomLevelRef = useRef(1);
+  let offsetRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const drawPixels = () => {
@@ -33,6 +36,14 @@ const ImageEditor: React.FC<Props> = ({
     }
   };
 
+  const ppd = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return 0;
+    }
+    return (canvas.width / resolution) * zoomLevelRef.current;
+  };
+
   const drawPixel = (color: number, x: number, y: number) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -40,16 +51,19 @@ const ImageEditor: React.FC<Props> = ({
       return;
     }
 
-    const ppd = canvas.width / resolution;
-
     ctx.fillStyle = colorMap[color];
-    const canvasX = Math.floor(x * ppd);
-    const canvasY = Math.floor(y * ppd);
+    const canvasX = Math.floor(x * ppd()) + offsetRef.current;
+    const canvasY = Math.floor(y * ppd()) + offsetRef.current;
 
-    ctx.fillRect(canvasX, canvasY, Math.ceil(ppd), Math.ceil(ppd));
+    ctx.fillRect(
+      Math.ceil(canvasX),
+      Math.ceil(canvasY),
+      Math.ceil(ppd()),
+      Math.ceil(ppd())
+    );
   };
 
-  const setCanvasPixelSize = () => {
+  const resetCanvasSize = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -61,7 +75,8 @@ const ImageEditor: React.FC<Props> = ({
   };
 
   const handleLoadAndResize = () => {
-    setCanvasPixelSize();
+    resetCanvasSize();
+    resetOffset();
     drawPixels();
   };
 
@@ -71,12 +86,14 @@ const ImageEditor: React.FC<Props> = ({
       return;
     }
 
-    const ppd = canvas.width / resolution;
     const canvasRect = canvas.getBoundingClientRect();
 
-    const x = Math.floor((clientX - canvasRect.left) / ppd);
-    const y = Math.floor((clientY - canvasRect.top) / ppd);
-
+    const x = Math.floor(
+      (clientX - canvasRect.left - offsetRef.current) / ppd()
+    );
+    const y = Math.floor(
+      (clientY - canvasRect.top - offsetRef.current) / ppd()
+    );
     // set this pixel to currently selected color
     pixels[y * resolution + x] = colorIdx;
     drawPixel(colorIdx, x, y);
@@ -114,6 +131,21 @@ const ImageEditor: React.FC<Props> = ({
     }
   };
 
+  const handleCanvasScroll = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    zoomLevelRef.current -= e.deltaY / 1000;
+    resetOffset();
+  };
+
+  const resetOffset = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    offsetRef.current = (-canvas.width * (zoomLevelRef.current - 1)) / 2;
+    drawPixels();
+  };
+
   const handleCanvasMouseUp = (e: MouseEvent) => {
     if (e.button === 0) {
       setIsDrawing(() => false);
@@ -146,6 +178,7 @@ const ImageEditor: React.FC<Props> = ({
         ref={canvasRef}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
+        onWheel={handleCanvasScroll}
       ></CanvasElement>
     </CanvasWrapper>
   );
