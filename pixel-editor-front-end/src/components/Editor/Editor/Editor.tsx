@@ -14,14 +14,23 @@ const Editor = () => {
 
   const handleSave = () => {};
 
+  const randomImage = () => {
+    const img: number[] = [];
+    for (let i = 0; i < 32 * 32; i++) {
+      img.push(Math.round(Math.random() * 3));
+    }
+    return img;
+  };
+
   return (
     <>
       <ImageEditor
+        images={{ "0,0": randomImage(), "0,-1": randomImage(), "0,-2": randomImage(), "-1,0": randomImage(), }}
         resolution={32}
         colorIdx={drawingColorIdx}
         colorMap={colorMap}
         onPixelsChanged={handlePixelsChange}
-        drawingPosition={[1, 0]}
+        drawingPosition={{ x: 1, y: 0 }}
       />
       {[0, 1, 2, 3].map((idx) => (
         <ColorButton

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import getCoords from "../../../util/getCoords";
 import { CanvasElement, CanvasWrapper } from "./ImageEditorStyles";
 
 interface Props {
@@ -7,12 +8,11 @@ interface Props {
   colorIdx: number;
   colorMap: { [key: number]: string };
   onPixelsChanged: (pixels: number[]) => void;
-  drawingPosition: [number, number];
+  drawingPosition: { x: number; y: number };
 }
 
 // Make drawAllPixels also draw things from images around the drawingPosition
 //  Find position for each image based on drawingPosition ()
-
 
 const ImageEditor: React.FC<Props> = ({
   images = {},
@@ -43,7 +43,16 @@ const ImageEditor: React.FC<Props> = ({
 
     // Draw each image
     for (const [coordStr, image] of Object.entries(images)) {
+      const [imagePositionX, imagePositionY] = getCoords(coordStr);
+      const imageOffsetX = imagePositionX - drawingPosition.x;
+      const imageOffsetY = imagePositionY - drawingPosition.y;
 
+      for (let i = 0; i < image.length; i++) {
+        const x = (i % resolution) + imageOffsetX * resolution;
+        const y = Math.floor(i / resolution) + imageOffsetY * resolution;
+
+        drawPixel(image[i], x, y);
+      }
     }
 
     // Draw pixels from currently edited image
@@ -101,7 +110,7 @@ const ImageEditor: React.FC<Props> = ({
     drawAllPixels();
   };
 
-  const setAndDrawPixel = (clientX: number, clientY: number) => {
+  const setAndDrawPixelIfInBounds = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
@@ -123,6 +132,10 @@ const ImageEditor: React.FC<Props> = ({
         panOffsetRef.current.y) /
         ppd()
     );
+
+    if (x < 0 || x >= resolution || y < 0 || y >= resolution) {
+      return;
+    }
     // set this pixel to currently selected color
     pixels[y * resolution + x] = colorIdx;
     drawPixel(colorIdx, x, y);
@@ -132,7 +145,7 @@ const ImageEditor: React.FC<Props> = ({
     e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
   ) => {
     if (e.button === 0) {
-      setAndDrawPixel(e.clientX, e.clientY);
+      setAndDrawPixelIfInBounds(e.clientX, e.clientY);
       setIsDrawing(() => true);
     } else if (e.button === 2) {
       e.preventDefault();
@@ -159,7 +172,7 @@ const ImageEditor: React.FC<Props> = ({
       const currentClientX = lastClientX + stepX * i;
       const currentClientY = lastClientY + stepY * i;
 
-      setAndDrawPixel(currentClientX, currentClientY);
+      setAndDrawPixelIfInBounds(currentClientX, currentClientY);
     }
   };
 
