@@ -6,10 +6,10 @@ import ImageEditor from "../ImageEditor/ImageEditor";
 
 const Editor = () => {
   const [drawingColorIdx, setDrawingColorIdx] = useState(0);
-  const [pixels, setPixels] = useState<number[]>([]);
+  const [pixels, setPixels] = useState<{ [key: string]: number[] }>({});
 
   const handlePixelsChange = (newPixels: number[]) => {
-    setPixels(() => newPixels);
+    // setPixels(() => newPixels);
   };
 
   const handleSave = () => {};
@@ -21,7 +21,7 @@ const Editor = () => {
         colorIdx={drawingColorIdx}
         colorMap={colorMap}
         onPixelsChanged={handlePixelsChange}
-        drawingCanvasPosition={[1, 0]}
+        drawingPosition={[1, 0]}
       />
       {[0, 1, 2, 3].map((idx) => (
         <ColorButton
@@ -32,14 +32,14 @@ const Editor = () => {
         />
       ))}
       <button onClick={handleSave}>Save</button>
-      {pixels.length > 0 && (
+      {/* {pixels.length > 0 && (
         <PixelImage
           colorMap={colorMap}
           pixels={pixels}
           resolution={32}
           size="10rem"
         />
-      )}
+      )} */}
     </>
   );
 };

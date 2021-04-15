@@ -2,32 +2,51 @@ import React, { useRef, useState, useEffect } from "react";
 import { CanvasElement, CanvasWrapper } from "./ImageEditorStyles";
 
 interface Props {
-  pixels?: { [key: string]: number[] };
+  images?: { [key: string]: number[] };
   resolution: number;
   colorIdx: number;
   colorMap: { [key: number]: string };
   onPixelsChanged: (pixels: number[]) => void;
-  drawingCanvasPosition: [number, number];
+  drawingPosition: [number, number];
 }
 
-// Set ppd based on zoom level
-// Change DrawPixel so it offsets based on pixelImage and current width based on ppd position and view offset
+// Make drawAllPixels also draw things from images around the drawingPosition
+//  Find position for each image based on drawingPosition ()
+
 
 const ImageEditor: React.FC<Props> = ({
+  images = {},
   resolution,
   colorIdx,
   colorMap,
   onPixelsChanged,
-  drawingCanvasPosition,
+  drawingPosition,
 }) => {
   // Browser event listeners require useRef, because they don't support state
   const pixels = useRef<number[]>([]).current;
-  let [isDrawing, setIsDrawing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
   let zoomLevelRef = useRef(1);
-  let offsetRef = useRef(0);
+  let zoomOffsetRef = useRef(0);
+  let panOffsetRef = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const drawPixels = () => {
+  const drawAllPixels = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) {
+      return;
+    }
+
+    ctx.fillStyle = colorMap[3];
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw each image
+    for (const [coordStr, image] of Object.entries(images)) {
+
+    }
+
+    // Draw pixels from currently edited image
     for (let i = 0; i < pixels.length; i++) {
       const x = i % resolution;
       const y = Math.floor(i / resolution);
@@ -52,8 +71,10 @@ const ImageEditor: React.FC<Props> = ({
     }
 
     ctx.fillStyle = colorMap[color];
-    const canvasX = Math.floor(x * ppd()) + offsetRef.current;
-    const canvasY = Math.floor(y * ppd()) + offsetRef.current;
+    const canvasX =
+      Math.floor(x * ppd()) + zoomOffsetRef.current + panOffsetRef.current.x;
+    const canvasY =
+      Math.floor(y * ppd()) + zoomOffsetRef.current + panOffsetRef.current.y;
 
     ctx.fillRect(
       Math.ceil(canvasX),
@@ -77,7 +98,7 @@ const ImageEditor: React.FC<Props> = ({
   const handleLoadAndResize = () => {
     resetCanvasSize();
     resetOffset();
-    drawPixels();
+    drawAllPixels();
   };
 
   const setAndDrawPixel = (clientX: number, clientY: number) => {
@@ -89,10 +110,18 @@ const ImageEditor: React.FC<Props> = ({
     const canvasRect = canvas.getBoundingClientRect();
 
     const x = Math.floor(
-      (clientX - canvasRect.left - offsetRef.current) / ppd()
+      (clientX -
+        canvasRect.left -
+        zoomOffsetRef.current -
+        panOffsetRef.current.x) /
+        ppd()
     );
     const y = Math.floor(
-      (clientY - canvasRect.top - offsetRef.current) / ppd()
+      (clientY -
+        canvasRect.top -
+        zoomOffsetRef.current -
+        panOffsetRef.current.y) /
+        ppd()
     );
     // set this pixel to currently selected color
     pixels[y * resolution + x] = colorIdx;
@@ -105,10 +134,13 @@ const ImageEditor: React.FC<Props> = ({
     if (e.button === 0) {
       setAndDrawPixel(e.clientX, e.clientY);
       setIsDrawing(() => true);
+    } else if (e.button === 2) {
+      e.preventDefault();
+      setIsPanning(() => true);
     }
   };
 
-  const handleCanvasMouseMove = (
+  const handleCanvasMouseMoveWhenDrawing = (
     e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
   ) => {
     if (!isDrawing) {
@@ -131,6 +163,24 @@ const ImageEditor: React.FC<Props> = ({
     }
   };
 
+  const handleCanvasMouseMoveWhenPanning = (
+    e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+  ) => {
+    if (!isPanning) {
+      return;
+    }
+    panOffsetRef.current.x += e.movementX;
+    panOffsetRef.current.y += e.movementY;
+    drawAllPixels();
+  };
+
+  const handleCanvasMouseMove = (
+    e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+  ) => {
+    handleCanvasMouseMoveWhenDrawing(e);
+    handleCanvasMouseMoveWhenPanning(e);
+  };
+
   const handleCanvasScroll = (e: React.WheelEvent<HTMLCanvasElement>) => {
     zoomLevelRef.current -= e.deltaY / 1000;
     resetOffset();
@@ -142,8 +192,8 @@ const ImageEditor: React.FC<Props> = ({
       return;
     }
 
-    offsetRef.current = (-canvas.width * (zoomLevelRef.current - 1)) / 2;
-    drawPixels();
+    zoomOffsetRef.current = (-canvas.width * (zoomLevelRef.current - 1)) / 2;
+    drawAllPixels();
   };
 
   const handleCanvasMouseUp = (e: MouseEvent) => {
@@ -152,22 +202,33 @@ const ImageEditor: React.FC<Props> = ({
       if (onPixelsChanged) {
         onPixelsChanged([...pixels]);
       }
+    } else if (e.button === 2) {
+      setIsPanning(() => false);
     }
   };
 
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+  };
+
   useEffect(() => {
+    // Fill pixels with the darkest color
     for (let i = 0; i < resolution * resolution; i++) {
       pixels.push(3);
     }
+
+    const canvas = canvasRef.current;
 
     handleLoadAndResize();
 
     window.addEventListener("resize", handleLoadAndResize);
     window.addEventListener("mouseup", handleCanvasMouseUp);
+    canvas?.addEventListener("contextmenu", handleContextMenu);
 
     return () => {
       window.removeEventListener("resize", handleLoadAndResize);
       window.removeEventListener("mouseup", handleCanvasMouseUp);
+      canvas?.removeEventListener("contextmenu", handleContextMenu);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
