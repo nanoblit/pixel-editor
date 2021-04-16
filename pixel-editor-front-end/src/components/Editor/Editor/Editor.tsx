@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { colorMap } from "../../../data/colorMaps";
 import PixelImage from "../../PixelImage/PixelImage";
 import ColorButton from "../ColorButton/ColorButton";
@@ -22,15 +22,26 @@ const Editor = () => {
     return img;
   };
 
+  const images = useMemo(
+    () => ({
+      "0,0": randomImage(),
+      "0,-1": randomImage(),
+      "0,-2": randomImage(),
+      "-1,0": randomImage(),
+    }),
+    []
+  );
+
   return (
     <>
       <ImageEditor
-        images={{ "0,0": randomImage(), "0,-1": randomImage(), "0,-2": randomImage(), "-1,0": randomImage(), }}
+        images={images}
         resolution={32}
         colorIdx={drawingColorIdx}
         colorMap={colorMap}
         onPixelsChanged={handlePixelsChange}
         drawingPosition={{ x: 1, y: 0 }}
+        drawGrid={true}
       />
       {[0, 1, 2, 3].map((idx) => (
         <ColorButton

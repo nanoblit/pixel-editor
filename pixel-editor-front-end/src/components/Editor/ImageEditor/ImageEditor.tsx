@@ -9,6 +9,7 @@ interface Props {
   colorMap: { [key: number]: string };
   onPixelsChanged: (pixels: number[]) => void;
   drawingPosition: { x: number; y: number };
+  drawGrid: boolean;
 }
 
 // Make drawAllPixels also draw things from images around the drawingPosition
@@ -21,15 +22,17 @@ const ImageEditor: React.FC<Props> = ({
   colorMap,
   onPixelsChanged,
   drawingPosition,
+  drawGrid 
 }) => {
   // Browser event listeners require useRef, because they don't support state
   const pixels = useRef<number[]>([]).current;
   const [isDrawing, setIsDrawing] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
-  let zoomLevelRef = useRef(1);
-  let zoomOffsetRef = useRef(0);
-  let panOffsetRef = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const zoomLevelRef = useRef(1);
+  const zoomOffsetRef = useRef(0);
+  const panOffsetRef = useRef({ x: 0, y: 0 });
+  const panTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const drawAllPixels = () => {
     const canvas = canvasRef.current;
@@ -62,6 +65,11 @@ const ImageEditor: React.FC<Props> = ({
 
       drawPixel(pixels[i], x, y);
     }
+
+    if (drawGrid) {
+      drawGridLines();
+    }
+    drawOutline();
   };
 
   const ppd = () => {
@@ -92,6 +100,57 @@ const ImageEditor: React.FC<Props> = ({
       Math.ceil(ppd())
     );
   };
+
+  const drawOutline = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) {
+      return;
+    }
+
+    const startX = Math.ceil(zoomOffsetRef.current + panOffsetRef.current.x);
+    const startY = Math.ceil(zoomOffsetRef.current + panOffsetRef.current.y);
+    const size = Math.ceil(resolution * ppd()); 
+
+    ctx.strokeStyle = "#913891";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startX, startY, size, size)
+  }
+
+  const drawGridLines = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) {
+      return;
+    }
+
+    ctx.strokeStyle = "#595959";
+    ctx.lineWidth = 2;
+
+    // Vertical
+    for (let pos = 1; pos < resolution; pos++) {
+      const startX = Math.ceil(pos * ppd() + zoomOffsetRef.current + panOffsetRef.current.x);
+      const startY = Math.ceil(zoomOffsetRef.current + panOffsetRef.current.y);
+      const endX = Math.ceil(startX);
+      const endY = Math.ceil(startY + resolution * ppd());
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY)
+      ctx.stroke();
+    }
+
+    // Horizontal
+    for (let pos = 1; pos < resolution; pos++) {
+      const startX = Math.ceil(zoomOffsetRef.current + panOffsetRef.current.x)
+      const startY = Math.ceil(pos * ppd() + zoomOffsetRef.current + panOffsetRef.current.y);
+      const endX = Math.ceil(startX + resolution * ppd());
+      const endY = Math.ceil(startY);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY)
+      ctx.stroke();
+    }
+  }
 
   const resetCanvasSize = () => {
     const canvas = canvasRef.current;
@@ -133,22 +192,28 @@ const ImageEditor: React.FC<Props> = ({
         ppd()
     );
 
+    // Don't allow drawing out of bounds
     if (x < 0 || x >= resolution || y < 0 || y >= resolution) {
       return;
     }
     // set this pixel to currently selected color
     pixels[y * resolution + x] = colorIdx;
     drawPixel(colorIdx, x, y);
+    if (drawGrid) {
+      drawGridLines();
+    }
+    drawOutline();
   };
 
   const handleCanvasMouseDown = (
     e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
   ) => {
     if (e.button === 0) {
+      // LMB
       setAndDrawPixelIfInBounds(e.clientX, e.clientY);
       setIsDrawing(() => true);
     } else if (e.button === 2) {
-      e.preventDefault();
+      // RMB
       setIsPanning(() => true);
     }
   };
@@ -184,7 +249,13 @@ const ImageEditor: React.FC<Props> = ({
     }
     panOffsetRef.current.x += e.movementX;
     panOffsetRef.current.y += e.movementY;
-    drawAllPixels();
+
+    if (!panTimeout.current) {
+      panTimeout.current = setTimeout(() => {
+        drawAllPixels();
+        panTimeout.current = null;
+      }, 16 /* Do this about once per frame */);
+    }
   };
 
   const handleCanvasMouseMove = (
