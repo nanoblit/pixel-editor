@@ -1,22 +1,23 @@
 {
   "name": "pixel-editor-back-end",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "ts-node-dev ./src/index.ts --respawn --transpileOnly",
-    "build": "tsc && node ./build/index.js",
-    "tsc": "tsc"
-  },
-  "author": "",
-  "license": "ISC",
+  "version": "0.0.1",
+  "description": "Awesome project developed with TypeORM.",
   "devDependencies": {
     "@types/express": "^4.17.11",
     "@types/node": "^14.14.41",
     "ts-node-dev": "^1.1.1",
-    "typescript": "^4.1.3"
+    "typescript": "^4.1.3",
+    "ts-node": "3.3.0"
   },
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "typeorm": "0.2.32",
+    "reflect-metadata": "^0.1.10",
+    "mysql": "^2.14.1"
+  },
+  "scripts": {
+    "start": "ts-node-dev ./src/index.ts --respawn --transpileOnly",
+    "build": "tsc && node ./build/index.js",
+    "tsc": "tsc"
   }
 }
